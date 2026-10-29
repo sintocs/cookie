@@ -6,14 +6,18 @@ import pyautogui
 import time
 import threading
 
+from input_watch import KeyToggle
+
 # === НАСТРОЙКИ ===
 MODEL_PATH = "best.pt"
 CONF_THRESH = 0.25          # порог для печеньки/улучшений
 MONITOR = 1                 # номер монитора (проверьте в debug_clicker.py)
 CLICK_COOLDOWN = 0.15       # мин. интервал между кликами (сек)
 # ПРИОРИТЕТ: сначала game (печенька), потом uprade (улучшения)
-PRIORITY_CLASSES = ["game", "uprade"]   
+PRIORITY_CLASSES = ["game", "uprade"]
 # ==================
+
+PAUSE_KEY = KeyToggle()     # пробел = пауза/продолжить
 
 pyautogui.FAILSAFE = True   # левый верхний угол = аварийный стоп
 pyautogui.PAUSE = 0.0005
@@ -52,10 +56,19 @@ def main():
     print(f"🖥️ Монитор {MONITOR}: offset=({mon['left']},{mon['top']}) {mon['width']}x{mon['height']}")
     print(f"🎯 ПРИОРИТЕТ: {' → '.join(PRIORITY_CLASSES)} (сверху вниз)")
     print(f"   conf>={CONF_THRESH}, cooldown={CLICK_COOLDOWN}s")
-    print("   Работаю в фоне... (Ctrl+C = стоп | Левый верхний угол = аварийный стоп)")
+    print("   ПРОБЕЛ = пауза/продолжить | Ctrl+C = стоп | Левый верхний угол = аварийный стоп")
 
+    paused = False
     try:
         while True:
+            # Пробел: пауза/продолжить (работает независимо от фокуса окна)
+            if PAUSE_KEY.pressed():
+                paused = not paused
+                print("\n⏸️  ПАУЗА (пробел — продолжить)" if paused else "▶️  ПРОДОЛЖАЮ")
+            if paused:
+                time.sleep(0.02)
+                continue
+
             # Скриншот
             img = np.array(sct.grab(mon))
             frame = img[:, :, :3]
@@ -97,6 +110,12 @@ def main():
             
             # Кликаем по очереди
             for _, y_scr, cx, class_name, conf in clicks:
+                if PAUSE_KEY.pressed():
+                    paused = not paused
+                    print("\n⏸️  ПАУЗА (пробел — продолжить)" if paused else "▶️  ПРОДОЛЖАЮ")
+                if paused:
+                    break
+
                 if click_at(cx, y_scr):
                     print(f"  🖱️ [{time.strftime('%H:%M:%S')}] {class_name} ({conf:.2f}) @ ({cx}, {y_scr})")
             

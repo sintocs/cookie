@@ -17,6 +17,8 @@ import pyautogui
 import time
 import os
 
+from input_watch import KeyToggle
+
 # === НАСТРОЙКИ ===
 CONF_THRESH = 0.25          # порог уверенности
 MONITOR = 1                 # номер монитора
@@ -49,6 +51,7 @@ POINT_CELL = 40
 
 DEBUG_ALL_DETECTIONS = False   # печатать ВСЕ детекции, включая игнорируемые
 DRY_RUN = os.environ.get("PECHENKA_DRY_RUN") == "1"   # без реальных кликов
+PAUSE_KEY = KeyToggle()        # пробел = пауза/продолжить
 # ==================
 
 pyautogui.FAILSAFE = True   # левый верхний угол = аварийный стоп
@@ -70,6 +73,17 @@ def resolve_target(class_name, allowed):
         if name.startswith(prefix):
             return prio, cooldown, prefix
     return None
+
+
+def handle_pause(paused):
+    """Переключает паузу по нажатию пробела. Возвращает новое состояние."""
+    if PAUSE_KEY.pressed():
+        paused = not paused
+        if paused:
+            print("\n⏸️  ПАУЗА (пробел — продолжить)")
+        else:
+            print("▶️  ПРОДОЛЖАЮ")
+    return paused
 
 
 def click_at(x, y):
@@ -143,11 +157,19 @@ def main():
           + (" | DRY-RUN (клики отключены)" if DRY_RUN else ""))
     print("   ВАЖНО: если игра запущена от администратора — этот скрипт тоже")
     print("          должен быть запущен от администратора, иначе клики игнорируются.")
-    print("   Ctrl+C = стоп | Левый верхний угол = аварийный стоп")
+    print("   ПРОБЕЛ = пауза/продолжить | Ctrl+C = стоп | Левый верхний угол = аварийный стоп")
+    if not PAUSE_KEY.available:
+        print("   ⚠️  Пробел недоступен (нужен Windows) — пауза только по Ctrl+C.")
 
     stats = {}
+    paused = False
     try:
         while True:
+            paused = handle_pause(paused)
+            if paused:
+                time.sleep(0.02)
+                continue
+
             img = np.array(sct.grab(mon))
             frame = img[:, :, :3]
 
@@ -156,6 +178,10 @@ def main():
             seen = []        # (key, cx, cy) — для дедупа между моделями
 
             for model, allowed, path in loaded:
+                paused = handle_pause(paused)
+                if paused:
+                    break
+
                 results = model(frame, conf=CONF_THRESH, verbose=False, imgsz=IMGSZ)
                 boxes = results[0].boxes
 
@@ -198,6 +224,10 @@ def main():
             pending.sort(key=lambda p: (p[0], p[1], p[2]))
 
             for priority, cy, cx, class_name, conf, key, cooldown in pending:
+                paused = handle_pause(paused)
+                if paused:
+                    break
+
                 pk = point_key(key, cx, cy)
                 if time.time() - last_click_by_point.get(pk, 0.0) < cooldown:
                     continue
