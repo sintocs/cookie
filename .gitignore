@@ -1,0 +1,51 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ===== Virtual environments =====
+yolo_env/
+pechenka/yolo_env/
+venv/
+.venv/
+env/
+ENV/
+
+# ===== Модели и веса (бинарники, хранятся отдельно) =====
+*.pt
+*.pth
+*.onnx
+*.engine
+*.tflite
+*.h5
+*.mlmodel
+*.ckpt
+*.safetensors
+best/
+runs/
+
+# ===== Датасеты и разметка =====
+itog/
+labels/
+data/
+screenshots/
+screenshots_augmented/
+*.cache
+
+# ===== Прочее =====
+*.log
+*.zip
+*.rar
+*.7z
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,11 @@
+# data.yaml — конфиг датасета для YOLOv8
+path: ./itog
+train: images/train
+val: images/val
+
+names:
+  0: game
+  1: uprade
+  2: crest
+
+nc: 3
